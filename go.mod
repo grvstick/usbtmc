@@ -1,8 +1,5 @@
-module github.com/gotmc/usbtmc
+module github.com/grvstick/usbtmc
 
-go 1.18
+go 1.21.5
 
-require (
-	github.com/google/gousb v1.1.2
-	github.com/gotmc/libusb/v2 v2.3.1
-)
+require github.com/google/gousb v1.1.2

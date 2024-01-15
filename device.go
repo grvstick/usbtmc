@@ -12,13 +12,13 @@ import (
 	"io"
 	"strings"
 
-	"github.com/gotmc/usbtmc/driver"
+	"github.com/grvstick/usbtmc/driver"
 )
 
-// Device models a USBTMC device, which includes a USB device and the required
+// UsbTmc models a USBTMC device, which includes a USB device and the required
 // USBTMC attributes and methods.
-type Device struct {
-	usbDevice       driver.USBDevice
+type UsbTmc struct {
+	usbDevice       driver.BareUsbDevice
 	bTag            byte
 	termChar        byte
 	termCharEnabled bool
@@ -27,7 +27,7 @@ type Device struct {
 // Write creates the appropriate USBMTC header, writes the header and data on
 // the bulk out endpoint, and returns the number of bytes written and any
 // errors.
-func (d *Device) Write(p []byte) (n int, err error) {
+func (d *UsbTmc) Write(p []byte) (n int, err error) {
 	// FIXME(mdr): I need to change this so that I look at the size of the buf
 	// being written to see if it can truly fit into one transfer, and if not
 	// split it into multiple transfers.
@@ -56,7 +56,7 @@ func (d *Device) Write(p []byte) (n int, err error) {
 
 // Read creates and sends the header on the bulk out endpoint and then reads
 // from the bulk in endpoint per USBTMC standard.
-func (d *Device) Read(p []byte) (n int, err error) {
+func (d *UsbTmc) Read(p []byte) (n int, err error) {
 	d.bTag = nextbTag(d.bTag)
 	header := encodeMsgInBulkOutHeader(d.bTag, uint32(len(p)), d.termCharEnabled, d.termChar)
 	if _, err = d.usbDevice.Write(header[:]); err != nil {
@@ -86,7 +86,7 @@ func (d *Device) Read(p []byte) (n int, err error) {
 	return pos, nil
 }
 
-func (d *Device) readRemoveHeader(p []byte) (n int, transfer int, err error) {
+func (d *UsbTmc) readRemoveHeader(p []byte) (n int, transfer int, err error) {
 	// FIXME(mdr): Seems like I shouldn't use 512 as a magic number or as a hard
 	// size limit. I should grab the max size of the bulk in endpoint.
 	usbtmcHeaderLen := 12
@@ -107,36 +107,36 @@ func (d *Device) readRemoveHeader(p []byte) (n int, transfer int, err error) {
 	return n - usbtmcHeaderLen, transfer, nil
 }
 
-func (d *Device) readKeepHeader(p []byte) (n int, err error) {
+func (d *UsbTmc) readKeepHeader(p []byte) (n int, err error) {
 	return d.usbDevice.Read(p)
 }
 
 // Close closes the underlying USB device.
-func (d *Device) Close() error {
+func (d *UsbTmc) Close() error {
 	return d.usbDevice.Close()
 }
 
 // WriteString writes a string using the underlying USB device. A newline
 // terminator is not automatically added.
-func (d *Device) WriteString(s string) (n int, err error) {
+func (d *UsbTmc) WriteString(s string) (n int, err error) {
 	return d.Write([]byte(s))
 }
 
 // Command sends the SCPI/ASCII command to the underlying USB device. A newline
 // character is automatically added to the end of the string.
-func (d *Device) Command(format string, a ...interface{}) error {
+func (d *UsbTmc) Command(format string, a ...interface{}) error {
 	cmd := format
 	if a != nil {
 		cmd = fmt.Sprintf(format, a...)
 	}
-	_, err := d.WriteString(strings.TrimSpace(cmd) + "\n")
+	_, err := d.WriteString(strings.TrimSpace(cmd) + string(d.termChar))
 	return err
 }
 
 // Query writes the given string to the USBTMC device and returns the returned
 // value as a string. A newline character is automatically added to the query
 // command sent to the instrument.
-func (d *Device) Query(s string) (string, error) {
+func (d *UsbTmc) Query(s string) (string, error) {
 	err := d.Command(s)
 	if err != nil {
 		return "", err
@@ -146,7 +146,7 @@ func (d *Device) Query(s string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s = fmt.Sprintf("%s", p[:n])
+	s = string(p[:n])
 	p = nil
 	return s, nil
 }

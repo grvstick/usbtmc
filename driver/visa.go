@@ -3,7 +3,7 @@
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
 
-package usbtmc
+package driver
 
 import (
 	"errors"
@@ -13,6 +13,7 @@ import (
 )
 
 // VisaResource represents a VISA enabled piece of test equipment.
+
 type VisaResource struct {
 	resourceString string
 	interfaceType  string

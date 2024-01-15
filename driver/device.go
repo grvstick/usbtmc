@@ -3,16 +3,17 @@
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
 
-package google
+package driver
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/google/gousb"
 )
 
-// Device represents a USB device not a USBMTC device.
-type Device struct {
+// BareUsbDevice represents a USB device not a USBMTC device.
+type BareUsbDevice struct {
 	dev                 *gousb.Device
 	intf                *gousb.Interface
 	cfg                 *gousb.Config
@@ -22,7 +23,7 @@ type Device struct {
 }
 
 // Close closes the Device.
-func (d *Device) Close() error {
+func (d *BareUsbDevice) Close() error {
 	d.intf.Close()
 	err := d.cfg.Close()
 	if err != nil {
@@ -32,22 +33,24 @@ func (d *Device) Close() error {
 }
 
 // String providers the Stringer interface method for Device.
-func (d *Device) String() string {
+func (d *BareUsbDevice) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
 // Write writes to the USB device's bulk out endpoint.
-func (d *Device) Write(p []byte) (n int, err error) {
+func (d *BareUsbDevice) Write(p []byte) (n int, err error) {
+	log.Printf("Writing Data: %x", p)
+	log.Printf("Writing Data: %s", p)
 	return d.BulkOutEndpoint.Write(p)
 }
 
 // WriteString writes the given string to the Device and returns the number
 // of bytes written along with an error code.
-func (d *Device) WriteString(s string) (n int, err error) {
+func (d *BareUsbDevice) WriteString(s string) (n int, err error) {
 	return d.Write([]byte(s))
 }
 
 // Read reads from the USB device's bulk in endpoint.
-func (d *Device) Read(p []byte) (n int, err error) {
+func (d *BareUsbDevice) Read(p []byte) (n int, err error) {
 	return d.BulkInEndpoint.Read(p)
 }
