@@ -7,7 +7,6 @@ package driver
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/google/gousb"
 )
@@ -39,8 +38,6 @@ func (d *BareUsbDevice) String() string {
 
 // Write writes to the USB device's bulk out endpoint.
 func (d *BareUsbDevice) Write(p []byte) (n int, err error) {
-	log.Printf("Writing Data: %x", p)
-	log.Printf("Writing Data: %s", p)
 	return d.BulkOutEndpoint.Write(p)
 }
 

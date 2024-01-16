@@ -46,11 +46,14 @@ func TestDevice(t *testing.T) {
 	}
 	log.Println(resp)
 
-	resp, err = inst.Query("*IDN?")
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < 5; i++ {
+		resp, err = inst.Query("*IDN?")
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println(resp)
+
 	}
-	log.Println(resp)
 	// inst.WriteString("*IDN?")
 	// buf := make([]byte, 100)
 	// _, err = inst.Read(buf)
