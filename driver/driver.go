@@ -8,10 +8,8 @@ package driver
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/google/gousb"
-	"github.com/google/gousb/usbid"
 )
 
 // Driver models libusb context and implements the driver.Driver interface.
@@ -35,18 +33,17 @@ func (drv *Driver) SetDbgLevel(lv int) {
 	drv.ctx.Debug(lv)
 }
 
-// NewDeviceByVIDPID creates new USB device based on the given the vendor ID
-// and product ID. If multiple USB devices matching the VID and PID are found,
-// only the first is returned.
-func (drv *Driver) NewDevice(vidRaw, pidRaw int, sn string) (*BareUsbDevice, error) {
+// NewDevice searches for device matching vid, pid and serial number. Serial number can be omitted by passing empty string
+// If serial number is omitted it will look for first device matching vid & pid
+// If a device is detected, it will go over configurations to see if thare is a TMC configuration.
+func (drv *Driver) NewDevice(vid, pid int, sn string) (*BareUsbDevice, error) {
 	// Iterate through available devices. Find all devices that match the given
 	// Vendor ID and Product ID.
-	vid, pid := gousb.ID(vidRaw), gousb.ID(pidRaw)
+	gVID, gPID := gousb.ID(vid), gousb.ID(pid)
 	devs, err := drv.ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
-		idMatch := desc.Vendor == vid && desc.Product == pid
 		// This anonymous function is called for every device present. Returning
 		// true means the device should be opened.
-		return idMatch
+		return desc.Vendor == gVID && desc.Product == gPID
 	})
 	if err != nil {
 		// Close all devices and return error.
@@ -123,83 +120,113 @@ func (drv *Driver) NewDevice(vidRaw, pidRaw int, sn string) (*BareUsbDevice, err
 	// 	}
 	// }
 
-	// Pick the first device found.
+	// pick the device with matching serial number
 	var dev *gousb.Device
-	for _, d := range devs {
-		serial, err := d.SerialNumber()
-		if err == nil && serial == sn {
-			dev = d
-		} else {
-			d.Close()
-		}
-	}
 
+	// empty string implies picking the first one
+	if len(sn) == 0 {
+		for i, d := range devs {
+			if i == 0 {
+				dev = d
+			} else {
+				d.Close()
+			}
+		}
+	} else {
+		for _, d := range devs {
+			serial, err := d.SerialNumber()
+			if err == nil && serial == sn {
+				dev = d
+			} else {
+				d.Close()
+			}
+		}
+
+	}
+	// There are cases not being able to claim USB device without this code
 	dev.SetAutoDetach(true)
 
 	if dev == nil {
-		return nil, fmt.Errorf("no devices found matching serial number %s", sn)
+		return nil, fmt.Errorf("no devices found matching vid(%v), pid(%v), sn(%v)", vid, pid, sn)
 	}
 
 	// Switch to configuration #0
-	activeConfig, err := dev.ActiveConfigNum()
+	activeCfg, err := dev.ActiveConfigNum()
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := dev.Config(activeConfig)
+	cfg, err := dev.Config(activeCfg)
 	if err != nil {
 		return nil, err
 	}
-	var bulkIn *gousb.InEndpoint
-	var bulkOut *gousb.OutEndpoint
-	var intIn *gousb.InEndpoint
-	var intx *gousb.Interface
 
 	// Loop through the interfaces
 	for _, ifDesc := range cfg.Desc.Interfaces {
-		// TODO(mdr): I should probably check this interface or config to confirm
-		// it meets the USBTMC requirements.
-		for _, alt  := range ifDesc.AltSettings{
-			if checkTMC(alt){
+		for _, alt := range ifDesc.AltSettings {
+			isTmc, proto := checkTMC(alt)
+			if isTmc {
 				intf, err := cfg.Interface(ifDesc.Number, alt.Number)
 				if err != nil {
 					log.Println(err)
 					return nil, err
 				}
-				intx = intf
-			}
-		}
-		// Loop through all the endpoints on this interface
-		for _, ep := range intx.Setting.Endpoints {
-			if ep.Direction == gousb.EndpointDirectionOut && ep.TransferType == gousb.TransferTypeBulk {
-				bulkOut, err = intx.OutEndpoint(ep.Number)
-				if err != nil {
-					return nil, err
-				}
-			}
-			if ep.Direction == gousb.EndpointDirectionIn && ep.TransferType == gousb.TransferTypeBulk {
-				bulkIn, err = intx.InEndpoint(ep.Number)
-				if err != nil {
-					return nil, err
-				}
-			}
-			if ep.Direction == gousb.EndpointDirectionIn && ep.TransferType == gousb.TransferTypeInterrupt {
-				intIn, err = intx.InEndpoint(ep.Number)
-				if err != nil {
-					return nil, err
-				}
+
+				return tryGetUsbDevice(cfg, dev, intf, proto)
 			}
 		}
 	}
 
-	d := BareUsbDevice{
+	return nil, fmt.Errorf("target device has no TMC class")
+}
+
+func tryGetUsbDevice(cfg *gousb.Config, dev *gousb.Device, intf *gousb.Interface, proto gousb.Protocol) (*BareUsbDevice, error) {
+	var bulkIn *gousb.InEndpoint
+	var bulkOut *gousb.OutEndpoint
+	var intIn *gousb.InEndpoint
+	var err error
+
+	for _, ep := range intf.Setting.Endpoints {
+		if ep.Direction == gousb.EndpointDirectionOut && ep.TransferType == gousb.TransferTypeBulk {
+			bulkOut, err = intf.OutEndpoint(ep.Number)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if ep.Direction == gousb.EndpointDirectionIn && ep.TransferType == gousb.TransferTypeBulk {
+			bulkIn, err = intf.InEndpoint(ep.Number)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if ep.Direction == gousb.EndpointDirectionIn && ep.TransferType == gousb.TransferTypeInterrupt && proto == prot488 {
+			intIn, err = intf.InEndpoint(ep.Number)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return &BareUsbDevice{
 		dev:                 dev,
-		intf:                intx,
+		intf:                intf,
 		cfg:                 cfg,
 		BulkInEndpoint:      bulkIn,
 		BulkOutEndpoint:     bulkOut,
 		InterruptInEndpoint: intIn,
-	}
-	return &d, nil
+	}, nil
+}
+
+func checkTMC(val gousb.InterfaceSetting) (bool, gousb.Protocol) {
+	//based on http://www.linux-usb.org/usb.ids
+	var (
+		class, sub gousb.Class
+		proto      gousb.Protocol
+	)
+	class, sub, proto = val.Class, val.SubClass, val.Protocol
+
+	isTmc := class == baseClsAppSpecific && sub == subClsTmc
+
+	return isTmc, proto
 }
 
 func (drv *Driver) NewDeviceFromVisaString(addr string) (*BareUsbDevice, error) {
@@ -210,59 +237,41 @@ func (drv *Driver) NewDeviceFromVisaString(addr string) (*BareUsbDevice, error) 
 	return drv.NewDevice(v.manufacturerID, v.modelCode, v.serialNumber)
 }
 
-func exitBootMode(dev *gousb.Device, bootPID gousb.ID) error {
-	thirdIndex := uint16(0x0487)
-	if bootPID == 0x2818 || bootPID == 0x3E18 {
-		thirdIndex = 0x0484
-	}
-	bRequest := uint8(0x0C)
-	value := uint16(0x0000)
-	packets := []struct {
-		bmRequestType uint8
-		index         uint16
-		data          []byte
-	}{
-		{0xC0, 0x047E, make([]byte, 0x01)},
-		{0xC0, 0x047D, make([]byte, 0x06)},
-		{0xC0, thirdIndex, make([]byte, 0x05)},
-		{0xC0, 0x0472, make([]byte, 0x0C)},
-		{0xC0, 0x047A, make([]byte, 0x01)},
-		{0x40, 0x0475, []byte{0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x08, 0x01}},
-	}
-	for i, packet := range packets {
-		_, err := dev.Control(
-			packet.bmRequestType,
-			bRequest,
-			value,
-			packet.index,
-			packet.data,
-		)
-		if err != nil {
-			return fmt.Errorf("error sending control transfer #%d: %s", i+1, err)
-		}
-	}
+// func exitBootMode(dev *gousb.Device, bootPID gousb.ID) error {
+// 	thirdIndex := uint16(0x0487)
+// 	if bootPID == 0x2818 || bootPID == 0x3E18 {
+// 		thirdIndex = 0x0484
+// 	}
+// 	bRequest := uint8(0x0C)
+// 	value := uint16(0x0000)
+// 	packets := []struct {
+// 		bmRequestType uint8
+// 		index         uint16
+// 		data          []byte
+// 	}{
+// 		{0xC0, 0x047E, make([]byte, 0x01)},
+// 		{0xC0, 0x047D, make([]byte, 0x06)},
+// 		{0xC0, thirdIndex, make([]byte, 0x05)},
+// 		{0xC0, 0x0472, make([]byte, 0x0C)},
+// 		{0xC0, 0x047A, make([]byte, 0x01)},
+// 		{0x40, 0x0475, []byte{0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x08, 0x01}},
+// 	}
+// 	for i, packet := range packets {
+// 		_, err := dev.Control(
+// 			packet.bmRequestType,
+// 			bRequest,
+// 			value,
+// 			packet.index,
+// 			packet.data,
+// 		)
+// 		if err != nil {
+// 			return fmt.Errorf("error sending control transfer #%d: %s", i+1, err)
+// 		}
+// 	}
 
-	// We need to wait for the USB device to exit boot mode and reboot in normal
-	// mode.
-	rebootDelay := time.Second * 7
-	time.Sleep(rebootDelay)
-	return nil
-}
-
-func checkTMC(val gousb.InterfaceSetting) bool {
-	var (
-		class, sub gousb.Class
-		proto      gousb.Protocol
-	)
-	class, sub, proto = val.Class, val.SubClass, val.Protocol
-
-	if c, ok := usbid.Classes[class]; ok {
-		if s, ok := c.SubClass[sub]; ok {
-			if p, ok := s.Protocol[proto]; ok {
-				log.Printf("%s %s %s", c, s, p)
-				return p == "TMC"
-			}
-		}
-	}
-	return false
-}
+// 	// We need to wait for the USB device to exit boot mode and reboot in normal
+// 	// mode.
+// 	rebootDelay := time.Second * 7
+// 	time.Sleep(rebootDelay)
+// 	return nil
+// }
