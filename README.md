@@ -1,52 +1,26 @@
 # usbtmc
-Go library to communicate with a USB Test and Measurement Class (USBTMC)
-enabled USB device.
-
-[![GoDoc][godoc badge]][godoc link]
-[![Go Report Card][report badge]][report card]
-[![Build Status][travis badge]][travis link]
-[![License Badge][license badge]][LICENSE.txt]
+This is a fork from https://github.com/gotmc/usbtmc. The purpose is to renew the repo completely based on gousb, since the feature of selecting between two usb libraries is not working anymore.
 
 ## Overview
 
-[USBTMC][] is a USB device class specification for test equiment and
-instrumentation devices, such as oscilloscopes, digital multimeters, and
-function generators. USBTMC requires three endpoints:
-
-- Control endpoint
-- Bulk-OUT endpoint
-- Bulk-IN endpoint
-
-Additionally, the USBTMC subclass USB488 has an Interrupt-IN endpoint.
-
-## USBTMC Descriptors
-
-- Interface class = 0xFE (application-specific)
-- Interface subclass = 0x03 (indicates USBTMC)
+Refer to [USB TMC Spec](https://www.usb.org/document-library/test-measurement-class-specification) for details.
 
 ## Installation
 
 ```bash
-$ go get github.com/gotmc/usbtmc
+$ go get github.com/grvstick/usbtmc
 ```
 
 ## Usage
 
-To use the [usbtmc][gousbtmc] package, you must register which Go-based
-[libusb][] interface library should be used.  [libusb][] is "a C library
-that provides generic access to USB devices." There are two Go-based
-libusb hardware interface libraries available:
-
-You'll need to install ***one*** of the above libraries using:
+You'll need to install gousb. Please note that libusb is a prerequisite for gousb
 
 ```bash
 $ go get -v github.com/google/gousb
 ```
 
 ## Documentation
-
-Documentation can be found at either:
-
+Refer to original repo or see 
 - <https://godoc.org/github.com/gotmc/usbtmc>
 
 ## Contributing
