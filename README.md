@@ -37,22 +37,10 @@ To use the [usbtmc][gousbtmc] package, you must register which Go-based
 that provides generic access to USB devices." There are two Go-based
 libusb hardware interface libraries available:
 
-- [github.com/google/gousb][gousb]
-- [github.com/gotmc/libusb][golibusb] — Not working currently
-
 You'll need to install ***one*** of the above libraries using:
 
 ```bash
 $ go get -v github.com/google/gousb
-$ go get -v github.com/gotmc/gotmc
-```
-
-To indicate which libusb interface library should be used, include
-***one*** of the following blank imports:
-
-```go
-import _ "github.com/gotmc/usbtmc/driver/google"
-import _ "github.com/gotmc/usbtmc/driver/gotmc"
 ```
 
 ## Documentation
@@ -60,8 +48,6 @@ import _ "github.com/gotmc/usbtmc/driver/gotmc"
 Documentation can be found at either:
 
 - <https://godoc.org/github.com/gotmc/usbtmc>
-- <http://localhost:6060/pkg/github.com/gotmc/usbtmc/> after running `$
-  godoc -http=:6060`
 
 ## Contributing
 
