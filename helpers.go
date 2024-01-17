@@ -7,9 +7,6 @@ package usbtmc
 
 import "encoding/binary"
 
-const (
-	bulkOutHeaderSize = 12
-)
 
 // nextbTag returns the next bTag given the current bTag. Per the USBTMC
 // standard, "the Host must set bTag such that 1<=bTag<=255."
@@ -24,7 +21,7 @@ func invertbTag(bTag byte) byte {
 
 // Create the first four bytes of the USBTMC meassage Bulk-OUT Header as shown
 // in USBTMC Table 1. The msgID value must match USBTMC Table 2.
-func encodeBulkHeaderPrefix(bTag byte, msgID msgID) [4]byte {
+func encodeBulkHeaderPrefix(bTag byte, msgID msgIDtype) [4]byte {
 	return [4]byte{
 		byte(msgID),
 		bTag,
@@ -37,7 +34,7 @@ func encodeBulkHeaderPrefix(bTag byte, msgID msgID) [4]byte {
 // shown in USBTMC Table 3.
 func encodeBulkOutHeader(bTag byte, transferSize uint32, eom bool) [12]byte {
 	// Offset 0-3: See Table 1.
-	prefix := encodeBulkHeaderPrefix(bTag, devDepMsgOut)
+	prefix := encodeBulkHeaderPrefix(bTag, MsgIdDevDepMsgOut)
 	// Offset 4-7: TransferSize
 	// Per USBTMC Table 3, the TransferSize is the "total number of USBTMC
 	// message data bytes to be sent in this USB transfer. This does not include
@@ -78,7 +75,7 @@ func encodeBulkOutHeader(bTag byte, transferSize uint32, eom bool) [12]byte {
 // content as shown in USBTMC Table 4.
 func encodeMsgInBulkOutHeader(bTag byte, transferSize uint32, termCharEnabled bool, termChar byte) [12]byte {
 	// Offset 0-3: See Table 1.
-	prefix := encodeBulkHeaderPrefix(bTag, requestDevDepMsgIn)
+	prefix := encodeBulkHeaderPrefix(bTag, MsgIdRequestDevDepMsgIn)
 	// Offset 4-7: TransferSize
 	// Per USBTMC Table 4, the TransferSize is the "maximum number of USBTMC
 	// message data bytes to be sent in response to the command. This does not

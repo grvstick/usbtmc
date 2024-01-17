@@ -5,19 +5,11 @@
 
 package usbtmc
 
-
 const reservedField = 0x00
 
-/*
- * usbtmc.c by Agilent/Stefan Kopp sets this to 2048 with the comment:
- * Size of driver internal IO buffer. Must be multiple of 4 and at least as
- * large as wMaxPacketSize (which is usually 512 bytes).
- */
-const ioBufferSize = 1024 * 1024 // Set to 1MB
 const headerSize = 12
 
-
-type msgID uint8
+type msgIDtype uint8
 
 // The following msgID values are found in Table 2 under the MACRO column of
 // the USBTMC Specificiation 1.0, April 14, 2003. The end of line comment shows
@@ -25,13 +17,13 @@ type msgID uint8
 // The trigger msgID comes from Table 1 -- USB488 defined msgID values of the
 // USBTMC-USB488 Specification 1.0, April 14, 2003.
 const (
-	devDepMsgOut            msgID = 1   // DEV_DEP_MSG_OUT
-	requestDevDepMsgIn      msgID = 2   // REQUEST_DEV_DEP_MSG_IN
-	devDepMsgIn             msgID = 2   // DEV_DEP_MSG_IN
-	vendorSpecificOut       msgID = 126 // VENDOR_SPECIFIC_OUT
-	requestVendorSpecificIn msgID = 127 // REQUEST_VENDOR_SPECIFIC_IN
-	vendorSpecificIn        msgID = 127 // VENDOR_SPECIFIC_IN
-	trigger                 msgID = 128 // TRIGGER
+	MsgIdDevDepMsgOut            msgIDtype = 1   // DEV_DEP_MSG_OUT
+	MsgIdRequestDevDepMsgIn      msgIDtype = 2   // REQUEST_DEV_DEP_MSG_IN
+	MsgIdDevDepMsgIn             msgIDtype = 2   // DEV_DEP_MSG_IN
+	MsgIdVendorSpecificOut       msgIDtype = 126 // VENDOR_SPECIFIC_OUT
+	MsgIdRequestVendorSpecificIn msgIDtype = 127 // REQUEST_VENDOR_SPECIFIC_IN
+	MsgIdVendorSpecificIn        msgIDtype = 127 // VENDOR_SPECIFIC_IN
+	MsgIdTrigger                 msgIDtype = 128 // TRIGGER
 )
 
 type bRequest uint8

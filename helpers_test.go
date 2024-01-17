@@ -53,17 +53,17 @@ func TestInvertingBtag(t *testing.T) {
 
 func TestEncodeBulkHeaderPrefix(t *testing.T) {
 	tests := []struct {
-		msgID        msgID
+		msgID        msgIDtype
 		bTag         byte
 		headerPrefix [4]byte
 	}{
-		{devDepMsgOut, 2, [4]byte{0x01, 0x02, 0xfd, 0x00}},
-		{devDepMsgOut, 129, [4]byte{0x01, 0x81, 0x7e, 0x00}},
-		{devDepMsgOut, 255, [4]byte{0x01, 0xff, 0x00, 0x00}},
-		{devDepMsgOut, 1, [4]byte{0x01, 0x01, 0xfe, 0x00}},
-		{requestDevDepMsgIn, 4, [4]byte{0x02, 0x04, 0xfb, 0x00}},
-		{vendorSpecificOut, 4, [4]byte{0x7e, 0x04, 0xfb, 0x00}},
-		{requestVendorSpecificIn, 4, [4]byte{0x7f, 0x04, 0xfb, 0x00}},
+		{MsgIdDevDepMsgOut, 2, [4]byte{0x01, 0x02, 0xfd, 0x00}},
+		{MsgIdDevDepMsgOut, 129, [4]byte{0x01, 0x81, 0x7e, 0x00}},
+		{MsgIdDevDepMsgOut, 255, [4]byte{0x01, 0xff, 0x00, 0x00}},
+		{MsgIdDevDepMsgOut, 1, [4]byte{0x01, 0x01, 0xfe, 0x00}},
+		{MsgIdRequestDevDepMsgIn, 4, [4]byte{0x02, 0x04, 0xfb, 0x00}},
+		{MsgIdVendorSpecificOut, 4, [4]byte{0x7e, 0x04, 0xfb, 0x00}},
+		{MsgIdRequestVendorSpecificIn, 4, [4]byte{0x7f, 0x04, 0xfb, 0x00}},
 	}
 	for _, test := range tests {
 		headerPrefix := encodeBulkHeaderPrefix(test.bTag, test.msgID)

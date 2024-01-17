@@ -13,7 +13,7 @@ import (
 
 func TestDevice(t *testing.T) {
 	drv, err := driver.NewDriver()
-	drv.SetDbgLevel(3)
+	drv.SetDbgLevel(0)
 
 	if err != nil {
 		log.Fatal(err)
@@ -32,27 +32,32 @@ func TestDevice(t *testing.T) {
 	}
 	defer drv.Close()
 
-	inst.usbDevice = *dev
+	inst.bareUsbDev = *dev
 	// inst.Command("*RST")
 	// resp, err := inst.Query("*OPC?")
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
 	// log.Println(resp)
-	inst.Command("*CLS")
+	inst.WriteString("*CLS")
 	resp, err := inst.Query("*OPC?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println(resp)
+	log.Printf("%x", resp)
 
 	for i := 0; i < 5; i++ {
-		resp, err = inst.Query("*IDN?")
+		_, err := inst.Write([]byte("*IDN?"))
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println(resp)
-
+		rsp, err := inst.Read()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println(string(rsp))
+		log.Printf("%x", rsp)
 	}
 	// inst.WriteString("*IDN?")
 	// buf := make([]byte, 100)

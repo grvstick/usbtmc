@@ -17,6 +17,7 @@ type BareUsbDevice struct {
 	intf                *gousb.Interface
 	cfg                 *gousb.Config
 	BulkInEndpoint      *gousb.InEndpoint
+	BulkInMaxPktSize    int
 	BulkOutEndpoint     *gousb.OutEndpoint
 	InterruptInEndpoint *gousb.InEndpoint
 }
