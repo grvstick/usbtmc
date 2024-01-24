@@ -22,33 +22,6 @@ type UsbTmc struct {
 	TermCharEnabled bool
 }
 
-// Write creates the appropriate USBMTC header, writes the header and data on
-// the bulk out endpoint, and returns the number of bytes written and any
-// errors.
-// func (d *UsbTmc) Write(data []byte) (n int, err error) {
-// 	maxTransferSize := d.usbDevice.BulkOutEndpoint.Desc.MaxPacketSize
-// 	for pos := 0; pos < len(data); {
-// 		d.bTag = nextbTag(d.bTag)
-// 		dataLen := len(data[pos:])
-// 		if dataLen > maxTransferSize-bulkOutHeaderSize {
-// 			dataLen = maxTransferSize - bulkOutHeaderSize
-// 		}
-// 		header := encodeBulkOutHeader(d.bTag, uint32(dataLen), true)
-// 		data := append(header[:], data[pos:pos+dataLen]...)
-// 		if moduloFour := len(data) % 4; moduloFour > 0 {
-// 			numAlignment := 4 - moduloFour
-// 			alignment := bytes.Repeat([]byte{0x00}, numAlignment)
-// 			data = append(data, alignment...)
-// 		}
-// 		_, err := d.usbDevice.Write(data)
-// 		if err != nil {
-// 			return pos, err
-// 		}
-// 		pos += dataLen
-// 	}
-// 	return len(data), nil
-// }
-
 func (d *UsbTmc) Write(data []byte) (int, error) {
 	d.BTag = (d.BTag % 255) + 1
 	header := encodeBulkOutHeader(d.BTag, uint32(len(data)), true)
