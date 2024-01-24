@@ -16,10 +16,10 @@ import (
 // UsbTmc models a USBTMC device, which includes a USB device and the required
 // USBTMC attributes and methods.
 type UsbTmc struct {
-	bareUsbDev      driver.BareUsbDevice
-	bTag            byte
-	termChar        byte
-	termCharEnabled bool
+	BareUsbDev      driver.BareUsbDevice
+	BTag            byte
+	TermChar        byte
+	TermCharEnabled bool
 }
 
 // Write creates the appropriate USBMTC header, writes the header and data on
@@ -50,28 +50,28 @@ type UsbTmc struct {
 // }
 
 func (d *UsbTmc) Write(data []byte) (int, error) {
-	d.bTag = (d.bTag % 255) + 1
-	header := encodeBulkOutHeader(d.bTag, uint32(len(data)), true)
+	d.BTag = (d.BTag % 255) + 1
+	header := encodeBulkOutHeader(d.BTag, uint32(len(data)), true)
 	packet := append(header[:], data...)
 
 	if len(data)%4 != 0 {
 		packet = append(packet, make([]byte, 4-len(data)%4)...)
 	}
 
-	return d.bareUsbDev.BulkOutEndpoint.Write(packet)
+	return d.BareUsbDev.BulkOutEndpoint.Write(packet)
 }
 
 // Read creates and sends the header on the bulk out endpoint and then reads
 // from the bulk in endpoint per USBTMC standard.
 func (d *UsbTmc) Read() ([]byte, error) {
-	buf := make([]byte, d.bareUsbDev.BulkInMaxPktSize*8)
-	d.bTag = nextbTag(d.bTag)
-	reqInMsg := encodeMsgInBulkOutHeader(d.bTag, uint32(len(buf)), d.termCharEnabled, d.termChar)
-	if _, err := d.bareUsbDev.Write(reqInMsg[:]); err != nil {
+	buf := make([]byte, d.BareUsbDev.BulkInMaxPktSize*8)
+	d.BTag = nextbTag(d.BTag)
+	reqInMsg := encodeMsgInBulkOutHeader(d.BTag, uint32(len(buf)), d.TermCharEnabled, d.TermChar)
+	if _, err := d.BareUsbDev.Write(reqInMsg[:]); err != nil {
 		return []byte{}, err
 	}
 
-	n, err := d.bareUsbDev.BulkInEndpoint.Read(buf)
+	n, err := d.BareUsbDev.BulkInEndpoint.Read(buf)
 	if err != nil || n < 12 {
 		return []byte{}, err
 	}
@@ -85,17 +85,17 @@ func (d *UsbTmc) Read() ([]byte, error) {
 	transferSize := int(binary.LittleEndian.Uint32(header[4:8]))
 	if transferSize > len(buf)-headerSize {
 		reqBytes := transferSize - (len(buf) - headerSize)
-		reqPktSize := reqBytes/d.bareUsbDev.BulkInMaxPktSize + 1
-		extraBuf := make([]byte, reqPktSize*d.bareUsbDev.BulkInMaxPktSize)
-		n, err := d.bareUsbDev.BulkInEndpoint.Read(extraBuf)
+		reqPktSize := reqBytes/d.BareUsbDev.BulkInMaxPktSize + 1
+		extraBuf := make([]byte, reqPktSize*d.BareUsbDev.BulkInMaxPktSize)
+		n, err := d.BareUsbDev.BulkInEndpoint.Read(extraBuf)
 		if err != nil {
 			return []byte{}, err
 		}
 		return append(buf, extraBuf[:n]...), nil
 	}
 
-	if d.termCharEnabled {
-		termPos := bytes.Index(buf, []byte{d.termChar})
+	if d.TermCharEnabled {
+		termPos := bytes.Index(buf, []byte{d.TermChar})
 		if termPos < n && termPos > 0 {
 			return buf[:termPos], nil
 		}
@@ -132,7 +132,7 @@ func (d *UsbTmc) Read() ([]byte, error) {
 
 // Close closes the underlying USB device.
 func (d *UsbTmc) Close() error {
-	return d.bareUsbDev.Close()
+	return d.BareUsbDev.Close()
 }
 
 // WriteString writes a string using the underlying USB device. A newline

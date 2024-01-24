@@ -20,9 +20,9 @@ func TestDevice(t *testing.T) {
 	}
 	defer drv.Close()
 	inst := UsbTmc{
-		termChar:        '\n',
-		bTag:            5,
-		termCharEnabled: true,
+		TermChar:        '\n',
+		BTag:            5,
+		TermCharEnabled: true,
 	}
 
 	dev, err := drv.NewDevice(int(0xF4EC), int(0x1631), "SDL13GCX4R0117")
@@ -32,7 +32,7 @@ func TestDevice(t *testing.T) {
 	}
 	defer drv.Close()
 
-	inst.bareUsbDev = *dev
+	inst.BareUsbDev = *dev
 	// inst.Command("*RST")
 	// resp, err := inst.Query("*OPC?")
 	// if err != nil {
