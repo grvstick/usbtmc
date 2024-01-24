@@ -98,6 +98,7 @@ func (drv *Driver) NewDevice(vid, pid int, sn string) (*BareUsbDevice, error) {
 	for _, ifDesc := range cfg.Desc.Interfaces {
 		for _, alt := range ifDesc.AltSettings {
 			isTmc, proto := checkTMC(alt)
+			log.Printf("Proto: %v", proto)
 			if isTmc {
 				intf, err := cfg.Interface(ifDesc.Number, alt.Number)
 				if err != nil {
@@ -134,11 +135,12 @@ func tryGetUsbDevice(cfg *gousb.Config, dev *gousb.Device, intf *gousb.Interface
 			}
 			log.Printf("Bulk in: %#v", bulkIn.Desc)
 		}
-		if ep.Direction == gousb.EndpointDirectionIn && ep.TransferType == gousb.TransferTypeInterrupt && proto == prot488 {
+		if ep.Direction == gousb.EndpointDirectionIn && ep.TransferType == gousb.TransferTypeInterrupt { //&& proto == prot488 {
 			intIn, err = intf.InEndpoint(ep.Number)
 			if err != nil {
 				return nil, err
 			}
+			log.Printf("Interrupt in: %#v", intIn.Desc)
 		}
 	}
 

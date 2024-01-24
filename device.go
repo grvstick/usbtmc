@@ -6,9 +6,9 @@
 package usbtmc
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 
 	"github.com/grvstick/usbtmc/driver"
 )
@@ -23,12 +23,16 @@ type UsbTmc struct {
 }
 
 func (d *UsbTmc) Write(data []byte) (int, error) {
+	log.Printf("Sending: %s", data)
 	d.BTag = (d.BTag % 255) + 1
+	if d.TermCharEnabled {
+		data = append(data, d.TermChar)
+	}
 	header := encodeBulkOutHeader(d.BTag, uint32(len(data)), true)
 	packet := append(header[:], data...)
 
-	if len(data)%4 != 0 {
-		packet = append(packet, make([]byte, 4-len(data)%4)...)
+	if len(packet)%4 != 0 {
+		packet = append(packet, make([]byte, 4-len(packet)%4)...)
 	}
 
 	return d.BareUsbDev.BulkOutEndpoint.Write(packet)
@@ -37,71 +41,34 @@ func (d *UsbTmc) Write(data []byte) (int, error) {
 // Read creates and sends the header on the bulk out endpoint and then reads
 // from the bulk in endpoint per USBTMC standard.
 func (d *UsbTmc) Read() ([]byte, error) {
-	buf := make([]byte, d.BareUsbDev.BulkInMaxPktSize*8)
-	d.BTag = nextbTag(d.BTag)
-	reqInMsg := encodeMsgInBulkOutHeader(d.BTag, uint32(len(buf)), d.TermCharEnabled, d.TermChar)
-	if _, err := d.BareUsbDev.Write(reqInMsg[:]); err != nil {
-		return []byte{}, err
-	}
-
-	n, err := d.BareUsbDev.BulkInEndpoint.Read(buf)
-	if err != nil || n < 12 {
-		return []byte{}, err
-	}
-
-	header, buf := buf[:12], buf[12:]
-	// log.Printf("header: %x", header)
-	if header[0] != byte(MsgIdDevDepMsgIn) {
-		return []byte{}, fmt.Errorf("not a valid read response: %x", header)
-	}
-
-	transferSize := int(binary.LittleEndian.Uint32(header[4:8]))
-	if transferSize > len(buf)-headerSize {
-		reqBytes := transferSize - (len(buf) - headerSize)
-		reqPktSize := reqBytes/d.BareUsbDev.BulkInMaxPktSize + 1
-		extraBuf := make([]byte, reqPktSize*d.BareUsbDev.BulkInMaxPktSize)
-		n, err := d.BareUsbDev.BulkInEndpoint.Read(extraBuf)
-		if err != nil {
+	received := []byte{}
+	eom := false
+	for !eom {
+		buf := make([]byte, d.BareUsbDev.BulkInMaxPktSize*12)
+		d.BTag = nextbTag(d.BTag)
+		reqInMsg := encodeMsgInBulkOutHeader(d.BTag, uint32(len(buf)), d.TermCharEnabled, d.TermChar)
+		if _, err := d.BareUsbDev.Write(reqInMsg[:]); err != nil {
 			return []byte{}, err
 		}
-		return append(buf, extraBuf[:n]...), nil
-	}
 
-	if d.TermCharEnabled {
-		termPos := bytes.Index(buf, []byte{d.TermChar})
-		if termPos < n && termPos > 0 {
-			return buf[:termPos], nil
+		n, err := d.BareUsbDev.BulkInEndpoint.Read(buf)
+		if err != nil || n < 12 {
+			return []byte{}, err
 		}
+		header, buf := buf[:12], buf[12:]
+		if header[0] != byte(MsgIdDevDepMsgIn) {
+			return []byte{}, fmt.Errorf("not a valid read response: %x", header)
+		}
+		transferSize := int(binary.LittleEndian.Uint32(header[4:8]))
+		received = append(received, buf[:transferSize]...)
+
+		if n >= headerSize + transferSize{
+			eom = header[8] & 1 == 1
+		}
+
 	}
-	return buf[:n], nil
+	return received, nil
 }
-
-// func (d *UsbTmc) readRemoveHeader(p []byte) (n int, transfer int, err error) {
-// 	// FIXME(mdr): Seems like I shouldn't use 512 as a magic number or as a hard
-// 	// size limit. I should grab the max size of the bulk in endpoint.
-// 	usbtmcHeaderLen := 12
-// 	temp := make([]byte, 512)
-// 	n, err = d.bareUsbDev.Read(temp)
-// 	log.Printf("ReadRemoveHeader %x\n", temp[:n])
-// 	log.Printf("ReadRemoveHeader %d\n", n)
-// 	// Remove the USBMTC Bulk-IN Header from the data and the number of bytes
-// 	if n < usbtmcHeaderLen {
-// 		return 0, 0, err
-// 	}
-// 	t32 := binary.LittleEndian.Uint32(temp[4:8])
-// 	transfer = int(t32)
-// 	reader := bytes.NewReader(temp)
-// 	_, err = reader.ReadAt(p, int64(usbtmcHeaderLen))
-
-// 	if err != nil && err != io.EOF {
-// 		return n - usbtmcHeaderLen, transfer, err
-// 	}
-// 	return n - usbtmcHeaderLen, transfer, nil
-// }
-
-// func (d *UsbTmc) readKeepHeader(p []byte) (n int, err error) {
-// 	return d.bareUsbDev.Read(p)
-// }
 
 // Close closes the underlying USB device.
 func (d *UsbTmc) Close() error {
