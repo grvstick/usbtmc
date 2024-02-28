@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/grvstick/usbtmc"
-	"github.com/grvstick/usbtmc/driver"
+	"github.com/grvstick/usbtmc/usb"
 )
 
 // const addr string = "USB0::0xF4EC::0x1631::SDL13GCX4R0117::INSTR"
@@ -14,26 +14,19 @@ import (
 
 func TestSiglentLoad(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-	drv, err := driver.NewDriver()
-	drv.SetDbgLevel(0)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer drv.Close()
 	inst := usbtmc.UsbTmc{
 		TermChar:        '\n',
 		BTag:            5,
 		TermCharEnabled: true,
 	}
 
-	dev, err := drv.NewDevice(int(0xF4EC), int(0x1631), "SDL13GCX4R0117")
+	dev, err := usb.NewDevice(int(0xF4EC), int(0x1631), "SDL13GCX4R0117")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer drv.Close()
 
-	inst.BareUsbDev = *dev
+	inst.UsbDevice = *dev
 	inst.WriteString("*CLS")
 	resp, err := inst.Query("*OPC?")
 	if err != nil {

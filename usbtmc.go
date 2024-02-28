@@ -10,13 +10,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/grvstick/usbtmc/driver"
+	"github.com/grvstick/usbtmc/usb"
 )
 
 // UsbTmc models a USBTMC device, which includes a USB device and the required
 // USBTMC attributes and methods.
 type UsbTmc struct {
-	BareUsbDev      driver.BareUsbDevice
+	UsbDevice       usb.UsbDevice
 	BTag            byte
 	TermChar        byte
 	TermCharEnabled bool
@@ -35,7 +35,7 @@ func (d *UsbTmc) Write(data []byte) (int, error) {
 		packet = append(packet, make([]byte, 4-len(packet)%4)...)
 	}
 
-	return d.BareUsbDev.BulkOutEndpoint.Write(packet)
+	return d.UsbDevice.BulkOutEndpoint.Write(packet)
 }
 
 // Read creates and sends the header on the bulk out endpoint and then reads
@@ -44,14 +44,14 @@ func (d *UsbTmc) Read() ([]byte, error) {
 	received := []byte{}
 	eom := false
 	for !eom {
-		buf := make([]byte, d.BareUsbDev.BulkInMaxPktSize*12)
+		buf := make([]byte, d.UsbDevice.BulkInMaxPktSize*12)
 		d.BTag = nextbTag(d.BTag)
 		reqInMsg := encodeMsgInBulkOutHeader(d.BTag, uint32(len(buf)), d.TermCharEnabled, d.TermChar)
-		if _, err := d.BareUsbDev.Write(reqInMsg[:]); err != nil {
+		if _, err := d.UsbDevice.BulkOutEndpoint.Write(reqInMsg[:]); err != nil {
 			return []byte{}, err
 		}
 
-		n, err := d.BareUsbDev.BulkInEndpoint.Read(buf)
+		n, err := d.UsbDevice.BulkInEndpoint.Read(buf)
 		if err != nil || n < 12 {
 			return []byte{}, err
 		}
@@ -62,8 +62,8 @@ func (d *UsbTmc) Read() ([]byte, error) {
 		transferSize := int(binary.LittleEndian.Uint32(header[4:8]))
 		received = append(received, buf[:transferSize]...)
 
-		if n >= headerSize + transferSize{
-			eom = header[8] & 1 == 1
+		if n >= headerSize+transferSize {
+			eom = header[8]&1 == 1
 		}
 
 	}
@@ -72,7 +72,7 @@ func (d *UsbTmc) Read() ([]byte, error) {
 
 // Close closes the underlying USB device.
 func (d *UsbTmc) Close() error {
-	return d.BareUsbDev.Close()
+	return d.UsbDevice.Close()
 }
 
 // WriteString writes a string using the underlying USB device. A newline
