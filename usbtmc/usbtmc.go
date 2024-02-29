@@ -8,27 +8,24 @@ package usbtmc
 import (
 	"encoding/binary"
 	"fmt"
-	"log"
-
-	"github.com/grvstick/usbtmc/usb"
 )
 
 // UsbTmc models a USBTMC device, which includes a USB device and the required
 // USBTMC attributes and methods.
 type UsbTmc struct {
-	UsbDevice       usb.UsbDevice
-	BTag            byte
-	TermChar        byte
-	TermCharEnabled bool
+	UsbDevice       *Device
+	bTag            byte
+	termChar        byte
+	termCharEnabled bool
 }
 
 func (d *UsbTmc) Write(data []byte) (int, error) {
-	log.Printf("Sending: %s", data)
-	d.BTag = (d.BTag % 255) + 1
-	if d.TermCharEnabled {
-		data = append(data, d.TermChar)
+	// log.Printf("Sending: %s", data)
+	d.rotateBtag()
+	if d.termCharEnabled {
+		data = append(data, d.termChar)
 	}
-	header := encodeBulkOutHeader(d.BTag, uint32(len(data)), true)
+	header := encodeBulkOutHeader(d.bTag, uint32(len(data)), true)
 	packet := append(header[:], data...)
 
 	if len(packet)%4 != 0 {
@@ -45,8 +42,8 @@ func (d *UsbTmc) Read() ([]byte, error) {
 	eom := false
 	for !eom {
 		buf := make([]byte, d.UsbDevice.BulkInMaxPktSize*12)
-		d.BTag = nextbTag(d.BTag)
-		reqInMsg := encodeMsgInBulkOutHeader(d.BTag, uint32(len(buf)), d.TermCharEnabled, d.TermChar)
+		d.rotateBtag()
+		reqInMsg := encodeMsgInBulkOutHeader(d.bTag, uint32(len(buf)), d.termCharEnabled, d.termChar)
 		if _, err := d.UsbDevice.BulkOutEndpoint.Write(reqInMsg[:]); err != nil {
 			return []byte{}, err
 		}
@@ -94,4 +91,17 @@ func (d *UsbTmc) Query(s string) (string, error) {
 		return "", err
 	}
 	return string(buf), nil
+}
+
+func (d *UsbTmc) rotateBtag() {
+	d.bTag = (d.bTag % 255) + 1
+}
+
+func NewUsbTmc(dev *Device, termchar byte) *UsbTmc {
+	return &UsbTmc{
+		UsbDevice:       dev,
+		bTag:            0,
+		termChar:        termchar,
+		termCharEnabled: true,
+	}
 }

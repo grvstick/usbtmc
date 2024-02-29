@@ -8,12 +8,6 @@ package usbtmc
 import "encoding/binary"
 
 
-// nextbTag returns the next bTag given the current bTag. Per the USBTMC
-// standard, "the Host must set bTag such that 1<=bTag<=255."
-func nextbTag(bTag byte) byte {
-	return (bTag % 255) + 1
-}
-
 // intertbTag returns the one's complement (inverse) of the given bTag.
 func invertbTag(bTag byte) byte {
 	return bTag ^ 0xff

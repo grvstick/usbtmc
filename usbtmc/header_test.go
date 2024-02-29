@@ -7,27 +7,27 @@ package usbtmc
 
 import "testing"
 
-func TestNextBtag(t *testing.T) {
-	testCases := []struct {
-		bTag     byte
-		nextbTag byte
-	}{
-		{0x01, 0x02},
-		{0xff, 0x01},
-		{255, 1},
-		{1, 2},
-		{10, 11},
-		{254, 255},
-	}
-	for _, testCase := range testCases {
-		nextbTag := nextbTag(testCase.bTag)
-		if nextbTag != testCase.nextbTag {
-			t.Errorf(
-				"nextbTag == %x, want %x for given bTag %x",
-				nextbTag, testCase.nextbTag, testCase.bTag)
-		}
-	}
-}
+// func TestNextBtag(t *testing.T) {
+// 	testCases := []struct {
+// 		bTag     byte
+// 		nextbTag byte
+// 	}{
+// 		{0x01, 0x02},
+// 		{0xff, 0x01},
+// 		{255, 1},
+// 		{1, 2},
+// 		{10, 11},
+// 		{254, 255},
+// 	}
+// 	for _, testCase := range testCases {
+// 		nextbTag := nextbTag(testCase.bTag)
+// 		if nextbTag != testCase.nextbTag {
+// 			t.Errorf(
+// 				"nextbTag == %x, want %x for given bTag %x",
+// 				nextbTag, testCase.nextbTag, testCase.bTag)
+// 		}
+// 	}
+// }
 
 func TestInvertingBtag(t *testing.T) {
 	testCases := []struct {

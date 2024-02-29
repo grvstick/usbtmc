@@ -3,10 +3,11 @@
 // Use of this source code is governed by a MIT-style license that
 // can be found in the LICENSE.txt file for the project.
 
-package usb
+package visa
 
 import (
 	"errors"
+	"log"
 	"testing"
 )
 
@@ -55,7 +56,7 @@ func TestParsingVisaResourceString(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		resource, err := NewVisaResource(testCase.resourceString)
+		resource, err := parseVisaResource(testCase.resourceString)
 		if resource.interfaceType != testCase.interfaceType {
 			t.Errorf(
 				"interfaceType == %s, want %s for resource %s",
@@ -124,6 +125,19 @@ func TestParsingVisaResourceString(t *testing.T) {
 		}
 		if err != nil && !testCase.isError {
 			t.Errorf("Unhandled error: %q for resource %s", err, testCase.resourceString)
+		}
+	}
+}
+
+func TestDiscovery(t *testing.T) {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	result := ListResources()
+
+	for _, resourceString := range result {
+		rsrc, err := parseVisaResource(resourceString)
+		log.Printf("%#v\n", rsrc)
+		if err != nil {
+			log.Println(err.Error())
 		}
 	}
 }

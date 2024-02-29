@@ -69,17 +69,17 @@ func (req bRequest) String() string {
 	return requestDescription[req]
 }
 
-type status byte
+// type status byte
 
-// The status constant values come from Table 16 -- USBTMC_status values USBTMC
-// Specificiation 1.0, April 14, 2003, and from Table 10 -- USB488 defined
-// USBTMC_status values in the USBTMC-USB488 Specification 1.0, April 14, 2003
-const (
-	statusSuccess               status = 0x01 // STATUS_SUCCESS
-	statusPending               status = 0x02 // STATUS_PENDING
-	statusInterruptInBusy       status = 0x20 // STATUS_INTERRUPT_IN_BUSY
-	statusFailed                status = 0x80 // STATUS_FAILED
-	statusTransferNotInProgress status = 0x81 // STATUS_TRANSFER_NOT_IN_PROGRESS
-	statusSplitNotInProgress    status = 0x82 // STATUS_SPLIT_NOT_IN_PROGRESS
-	statusSplitInProgress       status = 0x83 // STATUS_SPLIT_IN_PROGRESS
-)
+// // The status constant values come from Table 16 -- USBTMC_status values USBTMC
+// // Specificiation 1.0, April 14, 2003, and from Table 10 -- USB488 defined
+// // USBTMC_status values in the USBTMC-USB488 Specification 1.0, April 14, 2003
+// const (
+// 	statusSuccess               status = 0x01 // STATUS_SUCCESS
+// 	statusPending               status = 0x02 // STATUS_PENDING
+// 	statusInterruptInBusy       status = 0x20 // STATUS_INTERRUPT_IN_BUSY
+// 	statusFailed                status = 0x80 // STATUS_FAILED
+// 	statusTransferNotInProgress status = 0x81 // STATUS_TRANSFER_NOT_IN_PROGRESS
+// 	statusSplitNotInProgress    status = 0x82 // STATUS_SPLIT_NOT_IN_PROGRESS
+// 	statusSplitInProgress       status = 0x83 // STATUS_SPLIT_IN_PROGRESS
+// )

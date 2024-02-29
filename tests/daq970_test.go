@@ -2,31 +2,41 @@ package usbtmc_test
 
 import (
 	"log"
+	"strings"
 
 	"testing"
 
-	"github.com/grvstick/usbtmc"
-	"github.com/grvstick/usbtmc/usb"
+	"github.com/grvstick/usbtmc/usbtmc"
+	"github.com/grvstick/usbtmc/visa"
 )
 
 // const addr string = "USB0::0xF4EC::0x1631::SDL13GCX4R0117::INSTR"
 // const addr string = "USB0::1155::30016::SPD3ECAD2R1470::0::INSTR"
 
+const serialNumber = "MY"
+
 func TestDAQ970(t *testing.T) {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+ 
+	var inst *usbtmc.UsbTmc
+	var err error
+	log.Println("Listing Resources")
 
-	inst := usbtmc.UsbTmc{
-		TermChar:        '\n',
-		BTag:            5,
-		TermCharEnabled: true,
+	for _, resource := range visa.ListResources() {
+		log.Println(resource)
+		if strings.Contains(resource, serialNumber){
+			inst, err = visa.OpenResource(resource, '\n')
+
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		}
 	}
 
-	dev, err := usb.NewDevice(10893, 20737, "MY58014078")
-	if err != nil {
-		log.Fatal(err)
+	if inst == nil {
+		log.Fatal("no devices match the serial number")
 	}
 
-	inst.UsbDevice = *dev
 	// inst.WriteString("*RST")
 	// time.Sleep(3 * time.Second)
 
