@@ -37,6 +37,7 @@ func TestDAQ970(t *testing.T) {
 		log.Fatal("no devices match the serial number")
 	}
 
+	defer inst.Close()
 	// inst.WriteString("*RST")
 	// time.Sleep(3 * time.Second)
 
