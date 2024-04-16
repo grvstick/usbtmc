@@ -38,19 +38,3 @@ functionality, maintainability, or reliability.
 
 [usbtmc][gousbtmc] is released under the MIT license. Please see the
 [LICENSE.txt][] file for more information.
-
-[godoc badge]: https://godoc.org/github.com/gotmc/usbtmc?status.svg
-[godoc link]: https://godoc.org/github.com/gotmc/usbtmc
-[golibusb]: https://github.com/gotmc/libusb
-[gousb]: https://github.com/google/gousb
-[libusb]: http://libusb.info
-[LICENSE.txt]: https://github.com/gotmc/libusb/blob/master/LICENSE.txt
-[license badge]: https://img.shields.io/badge/license-MIT-blue.svg
-[pull request]: https://help.github.com/articles/using-pull-requests
-[report badge]: https://goreportcard.com/badge/github.com/gotmc/usbtmc
-[report card]: https://goreportcard.com/report/github.com/gotmc/usbtmc
-[Scott Chacon]: http://scottchacon.com/about.html
-[travis badge]: http://img.shields.io/travis/gotmc/usbtmc/master.svg
-[travis link]: https://travis-ci.org/gotmc/usbtmc
-[usbtmc]: http://www.usb.org/developers/docs/devclass_docs/
-[gousbtmc]: https://github.com/gotmc/usbtmc
