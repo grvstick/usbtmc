@@ -1,4 +1,4 @@
-package main_test
+package usbtmc_test
 
 // const addr string = "USB0::0xF4EC::0x1631::SDL13GCX4R0117::INSTR"
 // const addr string = "USB0::1155::30016::SPD3ECAD2R1470::0::INSTR"

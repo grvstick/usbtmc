@@ -1,4 +1,4 @@
-package main_test
+package usbtmc_test
 
 // import (
 // 	"log"
